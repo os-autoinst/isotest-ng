@@ -1,0 +1,4 @@
+# This file will automatically ping all mentioned persons or teams
+# when a PR changes files at the specified locations.
+
+*       @ByteOtter

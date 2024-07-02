@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: autofmt
+        entry: .pre-commit-hooks/rustfmt.sh
+        language: script
+        files: \.rs$
+
+      - id: clippy
+        name: clippy_linter
+        entry: .pre-commit-hooks/clippy.sh
+        language: script
+        files: \.rs$
