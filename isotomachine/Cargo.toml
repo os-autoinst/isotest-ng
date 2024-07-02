@@ -2,5 +2,9 @@
 name = "isotomachine"
 version = "0.1.0"
 edition = "2021"
+description = "A library for provisioning openQA worker VMs and machines"
+readme = "REAMDE.md"
+repository = "https://github.com/ByteOtter/isotest-ng/tree/main/isotomachine"
+license = "GPL-2.0"
 
 [dependencies]
