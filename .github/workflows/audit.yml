@@ -26,6 +26,9 @@ jobs:
                 toolchain: stable
                 override: true
 
+            - name: Install libvnc as dependency
+              run: sudo apt-get update && sudo apt-get install -y libvncserver-dev
+
             - name: Run cargo audit in ${{ matrix.subdir }}
               working-directory: ${{ matrix.subdir }}
               run: cargo audit --color always

@@ -19,6 +19,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+  
+      - name: Install libvnc as dependency
+        run: sudo apt-get update && sudo apt-get install -y libvncserver-dev
+
 
       - name: Run cargo fmt in ${{ matrix.subdir }}
         working-directory: ${{ matrix.subdir }}
