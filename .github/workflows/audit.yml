@@ -13,14 +13,19 @@ on:
 jobs:
     vulnerability_audit:
         runs-on: ubuntu-latest
+
+        strategy:
+          matrix:
+            subdir: [isotomachine, isototest]
+
         steps:
             - uses: actions/checkout@v3
+
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
                 override: true
-            - uses: actions-rs/cargo@v1
-              with:
-                use-cross: true
-                command: audit
-                args: --color always
+
+            - name: Run cargo audit in ${{ matrix.subdir }}
+              working-directory: ${{ matrix.subdir }}
+              run: cargo audit --color always

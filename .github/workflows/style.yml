@@ -12,12 +12,18 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        subdir: [isotomachine, isototest]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run cargo fmt
+      - name: Run cargo fmt in ${{ matrix.subdir }}
+        working-directory: ${{ matrix.subdir }}
         run: cargo fmt -- --check
 
-      - name: Run cargo clippy
+      - name: Run cargo clippy in ${{ matrix.subdir }}
+        working-directory: ${{ matrix.subdir }}
         run: cargo clippy
