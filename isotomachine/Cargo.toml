@@ -8,3 +8,5 @@ repository = "https://github.com/ByteOtter/isotest-ng/tree/main/isotomachine"
 license = "GPL-2.0"
 
 [dependencies]
+libvnc = "0.1.3"
+ruperl = "0.0.1-alpha.1"

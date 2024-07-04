@@ -9,3 +9,4 @@ license = "GPL-2.0"
 
 [dependencies]
 libvnc = "0.1.3"
+ruperl = "0.0.1-alpha.1"
