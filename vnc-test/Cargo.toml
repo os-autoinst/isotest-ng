@@ -1,9 +1,0 @@
-[package]
-name = "vnc-test"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-tokio = "1.38.1"
-vnc-rs = "0.5.1"
-isototest = { package = "isototest", path = "../isototest"}
