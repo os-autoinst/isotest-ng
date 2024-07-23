@@ -1,0 +1,60 @@
+---
+name: Bug Report
+description: Found an issue? Let us know!
+title: "[BUG]"
+labels: ["bug", "pending"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        **NOTE**: This form is only for reporting _reproducible bugs_ in one of the libraries.
+        If you have any trouble with building them or looking for any other assistance, please
+        post your question in the discussion section.
+  - type: input
+    attributes:
+      label: openQA version
+      description: What openQA version are you running?
+      placeholder: master
+  - type: dropdown
+    attributes:
+      label: Concerning Library
+      description: >
+        Which of the libraries are affected by this bug?
+      options:
+        - isototest
+        - isotomachine
+        - isotoenv
+        - multiple
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version
+      description: What version (or branch) of this library/libraries are affected?
+      placeholder: master
+  - type: input
+    attributes:
+      label: Bug Description
+      description: >
+        Please describe in detail the issue you encountered.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Behaviour
+      description: >
+        Please describe the behaviour you expected.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps for Reproduction
+      description: >
+        Describe in detail the exact steps we can take to reproduce this bug.
+        Please also provide details to your exact environment. Hardware specifications,
+        virtualization hosts, openQA version, etc.
+      placeholder: |
+        1. Build using ...
+        2. ...
+    validations:
+      required: true

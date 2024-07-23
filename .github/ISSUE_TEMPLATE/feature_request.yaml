@@ -1,0 +1,40 @@
+---
+name: Feature Request
+description: Suggest a new feature
+title: "[FR]"
+labels: ["enhancements", "pending"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        **NOTE**: Please only use this form for submitting _well-formed_ proposals
+        to extend these libraries in some form. If you are trying to solve a problem,
+        or need help bringing you ridea into an actionable form, please use our discussion section.
+  - type: input
+    attributes:
+      label: openQA Version
+      description: What version of openQA are you using?
+      placeholder: master
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Impacted library
+      description: What library does you proposals affect?
+      multiple: true 
+      options:
+        - isotomachine
+        - isototest
+        - isotoenv
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposal
+      description: >
+        Describe your idea in detail. Include any specific requirements
+        for your plan to work as well as the supposed benefit your feature will bring.
+        Also rough include a step-by-step actionplan to achieve this goal.
+        Feature requests with unclear or missing action plans will take longer to consider and plan.
+    validations:
+      required: true
