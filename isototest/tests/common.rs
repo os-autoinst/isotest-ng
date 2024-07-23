@@ -14,7 +14,7 @@ pub async fn start_mock_vnc_srv() -> Result<TcpListener, VncError> {
         Ok(srv) => {
             eprintln!("Mock VNC server started on {:?}", srv.local_addr());
             Ok(srv)
-        },
+        }
         Err(e) => return Err(VncError::IoError(e)),
     };
     srv
@@ -61,7 +61,6 @@ pub async fn mock_vnc_handshake(mut socket: TcpStream) -> Result<(), io::Error> 
         return Err(e);
     }
     eprintln!("Sent security type response.");
-
 
     // Read the client's security type message (8 bytes)
     let mut buf = [0; 8];

@@ -72,8 +72,8 @@ pub async fn create_vnc_client(
 /// returns an error.
 pub async fn kill_client(client: VncClient) -> Result<(), VncError> {
     match client.close().await {
-        Ok(_) => {},
-        Err(e) => return Err(e)
+        Ok(_) => {}
+        Err(e) => return Err(e),
     };
     drop(client);
     Ok(())

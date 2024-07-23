@@ -1,5 +1,5 @@
-use std::net::SocketAddr;
 use isototest::connection::kill_client;
+use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use vnc::client;
 use vnc::PixelFormat;
@@ -87,10 +87,14 @@ async fn test_create_connect_fail() {
 #[tokio::test]
 #[ignore = "Broken, needs to be fixed."]
 async fn test_client_kill() {
-    let srv = common::start_mock_vnc_srv().await.expect("Failed to start VNC server");
+    let srv = common::start_mock_vnc_srv()
+        .await
+        .expect("Failed to start VNC server");
     let addr = srv.local_addr().unwrap().to_string();
 
-    let client = create_vnc_client(addr, None).await.expect("[Error] Test 'kill_client' failed. Unable to create client.");
+    let client = create_vnc_client(addr, None)
+        .await
+        .expect("[Error] Test 'kill_client' failed. Unable to create client.");
     let result = kill_client(client).await;
 
     assert!(result.is_ok());
