@@ -73,7 +73,7 @@ pub async fn write_to_console(client: &VncClient, text: &str) -> Result<(), VncE
 ///
 /// # Returns
 ///
-/// * `Some(VirtualKeyCode)` - The `VirtualKeyCode` corresponding to the character.
+/// * `Some(u32)` - The `u32` value of the  `VirtualKeyCode` corresponding to the character.
 /// * `None` - If the character is not supported.
 fn char_to_keycode(c: char) -> Option<u32> {
     let keycode = match c {
