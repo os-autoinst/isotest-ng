@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Christopher Hock <christopher-hock@suse.com>
+// SPDX-LicenseIdentifier: GPL-2.0-or-later
 // TODO: Add extended ASCII and control sequences.
 
 #[allow(non_camel_case_types, dead_code)]
