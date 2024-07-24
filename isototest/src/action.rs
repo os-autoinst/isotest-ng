@@ -3,6 +3,8 @@
 //! # Action
 //!
 //! This module handles interactions between the VncClient and VncServer.
+use std::{thread::sleep, time::Duration};
+
 use vnc::{client::VncClient, ClientKeyEvent, VncError, X11Event};
 
 use crate::types::KeyCode;
@@ -45,7 +47,6 @@ pub async fn write_to_console(client: &VncClient, text: &str) -> Result<(), VncE
             Ok(_) => {}
             Err(e) => return Err(e),
         }
-
         // NOTE: Is this really necessary?
         // Setup key release events.
         keyevent = ClientKeyEvent {
@@ -59,6 +60,7 @@ pub async fn write_to_console(client: &VncClient, text: &str) -> Result<(), VncE
             Ok(_) => {}
             Err(e) => return Err(e),
         }
+        sleep(Duration::new(1, 0));
     }
     Ok(())
 }
@@ -168,7 +170,7 @@ fn char_to_keycode(c: char) -> Result<u32, VncError> {
         '|' => Ok(KeyCode::Pipe),
         ';' => Ok(KeyCode::SColon),
         ':' => Ok(KeyCode::Colon),
-        '\'' => Ok(KeyCode::SQuote),
+        '\'' => Ok(KeyCode::Apo),
         '"' => Ok(KeyCode::DblQuote),
         ',' => Ok(KeyCode::Comma),
         '.' => Ok(KeyCode::Period),
@@ -176,6 +178,8 @@ fn char_to_keycode(c: char) -> Result<u32, VncError> {
         '<' => Ok(KeyCode::LThan),
         '>' => Ok(KeyCode::GThan),
         '?' => Ok(KeyCode::Question),
+        '\n' => Ok(KeyCode::LineFeed),
+        '`' => Ok(KeyCode::GraveAcc),
         _ => {
             return Err(VncError::General(format!(
                 "Unable to identify ASCII code for character '{}'",

@@ -47,7 +47,7 @@ pub enum KeyCode {
     Dollar = 36,
     Percent = 37,
     And = 38,
-    SQuote = 39,
+    Apo = 39,
     LRBrace = 40,
     RRBrace = 41,
     /// Asterisk ('*')
@@ -107,8 +107,8 @@ pub enum KeyCode {
     RBracket = 93,
     Caret = 94,
     UScore = 95,
-    /// Apostrophe
-    Apo = 96,
+    /// Grave Accent or Backtick
+    GraveAcc = 96,
     a = 97,
     b = 98,
     c = 99,
