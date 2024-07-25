@@ -1,0 +1,10 @@
+[package]
+name = "vnc-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+isototest = { package = "isototest", path = "../isototest" }
+nix = { version = "0.29.0", features = ["socket", "net"] }
+tokio = { version = "1.38.1", features = ["full"] }
+vnc-rs = "0.5.1"
