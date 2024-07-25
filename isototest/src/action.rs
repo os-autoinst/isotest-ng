@@ -3,7 +3,11 @@
 //! # Action
 //!
 //! This module handles interactions between the VncClient and VncServer.
-use std::{thread::sleep, time::Duration};
+use std::{
+    io::{self, Read},
+    thread::sleep,
+    time::Duration,
+};
 
 use vnc::{client::VncClient, ClientKeyEvent, VncError, X11Event};
 
@@ -23,15 +27,19 @@ use crate::types::KeyCode;
 ///
 /// * `Ok(())` - If the transaction has been successfully completed.
 /// * `VncError` - If the transaction fails.
-pub async fn write_to_console(client: &VncClient, text: &str) -> Result<(), VncError> {
+pub async fn write_to_console(
+    client: &VncClient,
+    text: String,
+    framerate: Option<f64>,
+) -> Result<(), VncError> {
     // Translate each character to a keycode
     let mut keycode: Result<u32, VncError>;
     for ch in text.chars() {
         // Translate each character to its corresponding keycode.
         keycode = char_to_keycode(ch);
 
-        // Return error if key is not supported.
-        // TODO: This may be removed, as soon as special keys are implemented.
+        println!("Current char: {}", ch);
+
         // Setup press events.
         let mut keyevent: ClientKeyEvent = ClientKeyEvent {
             keycode: match keycode {
@@ -60,14 +68,48 @@ pub async fn write_to_console(client: &VncClient, text: &str) -> Result<(), VncE
             Ok(_) => {}
             Err(e) => return Err(e),
         }
-        sleep(Duration::new(1, 0));
+        let timer = match framerate_to_nanos(framerate) {
+            Ok(nanos) => nanos,
+            Err(e) => return Err(e),
+        };
+        sleep(timer);
     }
+    let mut buff = String::new();
+    io::stdin().read_line(&mut buff)?;
+
     Ok(())
 }
 
 /// Receive a screenshot of the remote machine.
 pub async fn read_screen(client: &VncClient) -> Result<(), VncError> {
     todo!("Not implemented yet!")
+}
+
+/// Calculate the nanoseconds in between signals.
+///
+/// Required as not to overflow the server's input buffer.
+///
+/// # Parameters
+///
+/// * rate: `i32` - The target framerate of the device. (30 by default)
+///
+/// Returns:
+///
+/// * `Ok(Duration)` - New `Duration` to time signals to the VNC server.
+/// * `Err(VncError)` - A generic `VncError` to indicate wrong use of the function.
+fn framerate_to_nanos(rate: Option<f64>) -> Result<Duration, VncError> {
+    match rate {
+        None => Ok(Duration::new(0, 20000000)),
+        Some(r) => {
+            if r <= 0.0 {
+                return Err(VncError::General(
+                    "[error] Framerate cannot be equal or less than zero!".to_string(),
+                ));
+            } // Will cut-off the floating point bits in the end.
+            let secs_per_frame = (1.0 / rate.unwrap()) as u64;
+            Ok(Duration::from_secs(secs_per_frame * 1000000000))
+        }
+    }
 }
 
 /// Assign a given character its corresponding `VirtualKeyCode`.
