@@ -38,8 +38,6 @@ pub async fn write_to_console(
         // Translate each character to its corresponding keycode.
         keycode = char_to_keycode(ch);
 
-        println!("Current char: {}", ch);
-
         // Setup press events.
         let mut keyevent: ClientKeyEvent = ClientKeyEvent {
             keycode: match keycode {
@@ -74,9 +72,6 @@ pub async fn write_to_console(
         };
         sleep(timer);
     }
-    let mut buff = String::new();
-    io::stdin().read_line(&mut buff)?;
-
     Ok(())
 }
 
