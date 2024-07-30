@@ -3,11 +3,40 @@
 //! # Action
 //!
 //! This module handles interactions between the VncClient and VncServer.
+extern crate proc_macro;
 use std::{thread::sleep, time::Duration};
 
 use vnc::{client::VncClient, ClientKeyEvent, VncError, X11Event};
 
 use crate::types::KeyCode;
+
+/// Sleep.
+/// Needed to time requests in accordance with the server's framerate to not overwhelm it with
+/// requests.
+macro_rules! wait_for_frame {
+    ($framerate:expr) => {
+        match framerate_to_nanos($framerate) {
+            Ok(nanos) => {
+                sleep(nanos);
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    };
+}
+
+/// Type of key press.
+///
+/// # Members
+///
+/// * `Press` - To signal a press and hold of the given key.
+/// * `Release` - To signal the release of a given key.
+/// * `Tap` - To signal a tap (press & release) of the given key.
+enum KeyEventType {
+    Press,
+    Release,
+    Tap,
+}
 
 /// Write given text to console
 ///
@@ -30,8 +59,6 @@ pub async fn write_to_console(
 ) -> Result<(), VncError> {
     // Translate each character to a keycode
     let mut keycode: u32;
-    let mut keyevent: ClientKeyEvent;
-    let mut x_event: X11Event;
 
     for ch in text.chars() {
         // Translate each character to its corresponding keycode.
@@ -40,171 +67,132 @@ pub async fn write_to_console(
             Err(e) => return Err(e),
         };
 
-        // HACK: Check for charadcters requiring a modifier.
-        // TODO/FIXME: - Turn client.input call into a macro.
+        // HACK: Check for characters requiring a modifier.
+        // TODO/FIXME:
         //       - Find better solution for the mod checking.
-        //       - Unify this if block if it is kept.
-        //       - Remove `clone` call!
-        //       - Remove redundant sleep calls!
+        //       - Unify this if-block if it is kept.
+        //       - Find a better way than unwrapping in a function call.
         if add_shift(ch).is_some() {
-            keyevent = add_shift(ch).unwrap();
-            x_event = X11Event::KeyEvent(keyevent.clone());
-
             // Press modifier
-            match client.input(x_event).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
+            press_button(
+                client,
+                add_shift(ch).unwrap(),
+                KeyEventType::Press,
+                framerate,
+            )
+            .await?;
 
-            // Press button for character
-            keyevent.keycode = keycode;
-            x_event = X11Event::KeyEvent(keyevent.clone());
+            // Tap button for character
+            press_button(client, keycode, KeyEventType::Tap, framerate).await?;
 
-            match client.input(x_event.clone()).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
-
-            // Release button
-            keyevent.down = false;
-
-            match client.input(x_event).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
-
-            // Release shift
-            keyevent.keycode = KeyCode::LSHIFT as u32;
-            keyevent.down = false;
-            x_event = X11Event::KeyEvent(keyevent);
-
-            match client.input(x_event).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            // FIXME: Remove this
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
+            // Release modifier
+            press_button(
+                client,
+                add_shift(ch).unwrap(),
+                KeyEventType::Release,
+                framerate,
+            )
+            .await?;
 
             // TODO: make this go away.
             continue;
         }
         if add_ctrl(ch).is_some() {
-            keyevent = add_ctrl(ch).unwrap();
-            x_event = X11Event::KeyEvent(keyevent.clone());
-
             // Press modifier
-            match client.input(x_event).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
+            press_button(
+                client,
+                add_ctrl(ch).unwrap(),
+                KeyEventType::Press,
+                framerate,
+            )
+            .await?;
 
-            // Press button for character
-            keyevent.keycode = keycode;
-            x_event = X11Event::KeyEvent(keyevent.clone());
+            // Tap key
+            press_button(client, keycode, KeyEventType::Tap, framerate).await?;
 
-            match client.input(x_event.clone()).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
-
-            // Release button
-            keyevent.down = false;
-
-            match client.input(x_event).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
-
-            // Release shift
-            keyevent.keycode = KeyCode::LCTRL as u32;
-            keyevent.down = false;
-            x_event = X11Event::KeyEvent(keyevent);
-
-            match client.input(x_event).await {
-                Ok(_) => {}
-                Err(e) => return Err(e),
-            }
-            let timer = match framerate_to_nanos(framerate) {
-                Ok(nanos) => nanos,
-                Err(e) => return Err(e),
-            };
-            sleep(timer);
+            // Release modifier
+            press_button(
+                client,
+                add_ctrl(ch).unwrap(),
+                KeyEventType::Release,
+                framerate,
+            )
+            .await?;
 
             // TODO: make this go away.
             continue;
         }
-
-        // Setup press events.
-        keyevent = ClientKeyEvent {
-            keycode,
-            down: true,
-        };
-        let mut x_event: X11Event = X11Event::KeyEvent(keyevent);
-
-        // Send individual keypresses.
-        match client.input(x_event).await {
-            Ok(_) => {}
-            Err(e) => return Err(e),
-        }
-        // NOTE: Is this really necessary?
-        // Setup key release events.
-        keyevent = ClientKeyEvent {
-            keycode,
-            down: false,
-        };
-        x_event = X11Event::KeyEvent(keyevent);
-
-        // Send key releases.
-        match client.input(x_event).await {
-            Ok(_) => {}
-            Err(e) => return Err(e),
-        }
-        let timer = match framerate_to_nanos(framerate) {
-            Ok(nanos) => nanos,
-            Err(e) => return Err(e),
-        };
-        sleep(timer);
+        press_button(client, keycode, KeyEventType::Tap, framerate).await?;
     }
     Ok(())
 }
 
+#[allow(unused)]
 /// Receive a screenshot of the remote machine.
 pub async fn read_screen(client: &VncClient) -> Result<(), VncError> {
     todo!("Not implemented yet!")
+}
+
+/// Encapsulate the `client.input()` function calls to avoid repitition.
+///
+/// Press and release a button or release it manually, if it is pressed.
+///
+/// # Parameters
+///
+/// * client: `&VncClient` - Reference to the client used for communication.
+/// * keycode: `u32` - The keycode of the button to press.
+/// * evtype: `KeyEventType` - Select whether the key is tapped, held or released.
+/// * framerate: `Option<f64>` - The framerate of the target device. (default: 30)
+///
+/// # Returns
+///
+/// * `Ok(())` - If the keypress has been sent correctly.
+/// * `Err(VncError)` - If an error occured during communication.
+async fn press_button(
+    client: &VncClient,
+    keycode: u32,
+    evtype: KeyEventType,
+    framerate: Option<f64>,
+) -> Result<(), VncError> {
+    match evtype {
+        KeyEventType::Press => {
+            let kevent: ClientKeyEvent = ClientKeyEvent {
+                keycode,
+                down: true,
+            };
+            let xevent: X11Event = X11Event::KeyEvent(kevent);
+
+            client.input(xevent).await?;
+            wait_for_frame!(framerate)?;
+        }
+        KeyEventType::Release => {
+            let kevent: ClientKeyEvent = ClientKeyEvent {
+                keycode,
+                down: false,
+            };
+            let xevent: X11Event = X11Event::KeyEvent(kevent);
+
+            client.input(xevent).await?;
+            wait_for_frame!(framerate)?;
+        }
+        KeyEventType::Tap => {
+            let mut kevent: ClientKeyEvent = ClientKeyEvent {
+                keycode,
+                down: true,
+            };
+            let mut xevent: X11Event = X11Event::KeyEvent(kevent.clone());
+
+            client.input(xevent).await?;
+            wait_for_frame!(framerate)?;
+
+            kevent.down = false;
+            xevent = X11Event::KeyEvent(kevent);
+
+            client.input(xevent).await?;
+            wait_for_frame!(framerate)?;
+        }
+    }
+    Ok(())
 }
 
 // HACK
@@ -216,20 +204,16 @@ pub async fn read_screen(client: &VncClient) -> Result<(), VncError> {
 ///
 /// # Returns
 ///
-/// * `Some(ClientKeyEvent)` - Returns a `ClientKeyEvent` using the `LSHIFT` KeyCode.
+/// * `Some(u32)` - Returns a `ClientKeyEvent` using the `LSHIFT` KeyCode.
 /// * `None` - if the char does not require it.
-fn add_shift(c: char) -> Option<ClientKeyEvent> {
+fn add_shift(c: char) -> Option<u32> {
     const MOD_CHARS: &[char] = &[
         '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '{', '}', '|', ':', '"', '<',
         '>', '?', '~',
     ];
 
     if c.is_ascii_uppercase() || MOD_CHARS.contains(&c) {
-        let keyevent: ClientKeyEvent = ClientKeyEvent {
-            keycode: KeyCode::LSHIFT as u32,
-            down: true,
-        };
-        return Some(keyevent);
+        return Some(KeyCode::LSHIFT as u32);
     }
     None
 }
@@ -245,14 +229,10 @@ fn add_shift(c: char) -> Option<ClientKeyEvent> {
 ///
 /// * `Some(ClientKeyEvent)` - Returns a LCTRL `KeyEvent` if the character requires it.
 /// * `None` - If the char does not require it.
-fn add_ctrl(c: char) -> Option<ClientKeyEvent> {
+fn add_ctrl(c: char) -> Option<u32> {
     let ascii_value = c as u8;
     if ascii_value <= 0x1F || ascii_value == 0x7F {
-        let keyevent: ClientKeyEvent = ClientKeyEvent {
-            keycode: KeyCode::LCTRL as u32,
-            down: true,
-        };
-        return Some(keyevent);
+        return Some(KeyCode::LCTRL as u32);
     }
     None
 }
