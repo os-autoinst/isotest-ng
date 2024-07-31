@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Christopher Hock <christopher-hock@suse.com>
 // SPDX-LicenseIdentifier: GPL-2.0-or-later
-//! # Action
+//! Action
 //!
 //! This module handles interactions between the VncClient and VncServer.
 extern crate proc_macro;
@@ -170,7 +170,7 @@ fn get_modifier(c: char) -> Option<u32> {
 ///
 /// # Parameters
 ///
-/// * rate: `i32` - The target framerate of the device. (30 by default)
+/// * rate: `Option<f64>` - The target framerate of the device. (30 by default)
 ///
 /// Returns:
 ///
@@ -184,7 +184,8 @@ fn framerate_to_nanos(rate: Option<f64>) -> Result<Duration, VncError> {
                 return Err(VncError::General(
                     "[error] Framerate cannot be equal or less than zero!".to_string(),
                 ));
-            } // Will cut-off the floating point bits in the end.
+            }
+            // Will cut-off the floating point bits in the end.
             let secs_per_frame = (1.0 / rate.unwrap()) as u64;
             Ok(Duration::from_secs(secs_per_frame * 1000000000))
         }
@@ -298,6 +299,7 @@ fn char_to_keycode(c: char) -> Result<u32, VncError> {
         '?' => Ok(KeyCode::Question),
         '\n' => Ok(KeyCode::LineFeed),
         '`' => Ok(KeyCode::GraveAcc),
+        '~' => Ok(KeyCode::Tilde),
         _ => {
             return Err(VncError::General(format!(
                 "Unable to identify ASCII code for character '{}'",

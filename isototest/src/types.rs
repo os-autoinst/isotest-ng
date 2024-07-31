@@ -180,5 +180,5 @@ pub enum KeyCode {
     LCrlBrace = 123,
     Pipe = 124,
     RCrlBrace = 125,
-    Circumflex = 126,
+    Tilde = 0x7e,
 }
