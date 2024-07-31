@@ -77,7 +77,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // println!("Getting port...");
     // let addr = vnc_server.srv.as_ref().unwrap().local_addr()?;
     let addr = "";
-    let client = match create_vnc_client(addr.to_string(), None).await {
+    let psw = "password".to_string();
+    let client = match create_vnc_client(addr.to_string(), Some(psw)).await {
         Ok(client) => {
             println!("Client created. Handshake successful.");
             client
@@ -88,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    match write_to_console(&client, include_str!("lore.txt").to_string(), None).await {
+    match write_to_console(&client, include_str!("test.txt").to_string(), None).await {
         Ok(_) => {
             println!("Test text sent!");
         }
