@@ -8,7 +8,7 @@ use std::{thread::sleep, time::Duration};
 
 use vnc::{client::VncClient, ClientKeyEvent, VncError, X11Event};
 
-use crate::types::KeyCode;
+use crate::types::{KeyCode, KeyEventType};
 
 /// Sleep.
 /// Needed to time requests in accordance with the server's framerate to not overwhelm it with
@@ -23,19 +23,6 @@ macro_rules! wait_for_frame {
             Err(e) => Err(e),
         }
     };
-}
-
-/// Type of key press.
-///
-/// # Members
-///
-/// * `Press` - To signal a press and hold of the given key.
-/// * `Release` - To signal the release of a given key.
-/// * `Tap` - To signal a tap (press & release) of the given key.
-enum KeyEventType {
-    Press,
-    Release,
-    Tap,
 }
 
 /// Write given text to console
@@ -62,67 +49,21 @@ pub async fn write_to_console(
 
     for ch in text.chars() {
         // Translate each character to its corresponding keycode.
-        keycode = match char_to_keycode(ch) {
-            Ok(code) => code,
-            Err(e) => return Err(e),
-        };
+        keycode = char_to_keycode(ch)?;
 
-        // HACK: Check for characters requiring a modifier.
-        // TODO/FIXME:
-        //       - Find better solution for the mod checking.
-        //       - Unify this if-block if it is kept.
-        //       - Find a better way than unwrapping in a function call.
-        if add_shift(ch).is_some() {
-            // Press modifier
-            press_button(
-                client,
-                add_shift(ch).unwrap(),
-                KeyEventType::Press,
-                framerate,
-            )
-            .await?;
-
-            // Tap button for character
-            press_button(client, keycode, KeyEventType::Tap, framerate).await?;
-
-            // Release modifier
-            press_button(
-                client,
-                add_shift(ch).unwrap(),
-                KeyEventType::Release,
-                framerate,
-            )
-            .await?;
-
-            // TODO: make this go away.
-            continue;
+        // Check if given character requires either shift of Ctrl modifiers.
+        // If so, press it.
+        if let Some(modifier) = get_modifier(ch) {
+            press_button(client, modifier, KeyEventType::Press, framerate).await?;
         }
-        if add_ctrl(ch).is_some() {
-            // Press modifier
-            press_button(
-                client,
-                add_ctrl(ch).unwrap(),
-                KeyEventType::Press,
-                framerate,
-            )
-            .await?;
 
-            // Tap key
-            press_button(client, keycode, KeyEventType::Tap, framerate).await?;
-
-            // Release modifier
-            press_button(
-                client,
-                add_ctrl(ch).unwrap(),
-                KeyEventType::Release,
-                framerate,
-            )
-            .await?;
-
-            // TODO: make this go away.
-            continue;
-        }
+        // Tap key corresponding to character.
         press_button(client, keycode, KeyEventType::Tap, framerate).await?;
+
+        // Release the modifier if it is pressed.
+        if let Some(modifier) = get_modifier(ch) {
+            press_button(client, modifier, KeyEventType::Release, framerate).await?;
+        }
     }
     Ok(())
 }
@@ -195,41 +136,27 @@ async fn press_button(
     Ok(())
 }
 
-// HACK
-/// Check if the fiven char requires SHIFT to be pressed.
+/// Determine if a given character requires a modifier key and return its keycode.
 ///
 /// # Parameters
 ///
-/// * c: `char` - The character to be checked.
+/// * c: `char` - Character to be examined.
 ///
 /// # Returns
 ///
-/// * `Some(u32)` - Returns a `ClientKeyEvent` using the `LSHIFT` KeyCode.
-/// * `None` - if the char does not require it.
-fn add_shift(c: char) -> Option<u32> {
-    const MOD_CHARS: &[char] = &[
+/// * `Some(u32)` - Returns the keycode for Shift or Ctrl modifier keys if the character given
+/// requires them.
+/// * `None` - If no modifier key is required.
+fn get_modifier(c: char) -> Option<u32> {
+    const SHIFT_CHARS: &[char] = &[
         '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '{', '}', '|', ':', '"', '<',
         '>', '?', '~',
     ];
 
-    if c.is_ascii_uppercase() || MOD_CHARS.contains(&c) {
+    if c.is_ascii_uppercase() || SHIFT_CHARS.contains(&c) {
         return Some(KeyCode::LSHIFT as u32);
     }
-    None
-}
 
-// HACK
-/// Check if the given char requires CTRL or similar.
-///
-/// # Parameters
-///
-/// * c: `char` - The character to check.
-///
-/// # Returns
-///
-/// * `Some(ClientKeyEvent)` - Returns a LCTRL `KeyEvent` if the character requires it.
-/// * `None` - If the char does not require it.
-fn add_ctrl(c: char) -> Option<u32> {
     let ascii_value = c as u8;
     if ascii_value <= 0x1F || ascii_value == 0x7F {
         return Some(KeyCode::LCTRL as u32);
@@ -266,17 +193,14 @@ fn framerate_to_nanos(rate: Option<f64>) -> Result<Duration, VncError> {
 
 /// Assign a given character its corresponding `VirtualKeyCode`.
 ///
-/// NOTE: This is only to be used in combination with sending text. Special characters and command
-/// sequences are not yet implemented.
-///
 /// # Parameters
 ///
 /// * c: `char` - The character to look up.
 ///
 /// # Returns
 ///
-/// * `Some(u32)` - The `u32` value of the  `VirtualKeyCode` corresponding to the character.
-/// * `None` - If the character is not supported.
+/// * `Ok(u32)` - The `u32` value of the  `VirtualKeyCode` corresponding to the character.
+/// * `Err(VncError)` - If the character is not supported.
 fn char_to_keycode(c: char) -> Result<u32, VncError> {
     let keycode = match c {
         '2' => Ok(KeyCode::Key2),
