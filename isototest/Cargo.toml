@@ -8,6 +8,7 @@ repository = "https://github.com/ByteOtter/isotest-ng/tree/main/isototest"
 license = "GPL-2.0"
 
 [dependencies]
+image = "0.25.2"
 tokio = "1.38.1"
 vnc-rs = "0.5.1"
 

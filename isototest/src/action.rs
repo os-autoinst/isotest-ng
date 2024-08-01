@@ -68,12 +68,6 @@ pub async fn write_to_console(
     Ok(())
 }
 
-#[allow(unused)]
-/// Receive a screenshot of the remote machine.
-pub async fn read_screen(client: &VncClient) -> Result<(), VncError> {
-    todo!("Not implemented yet!")
-}
-
 /// Encapsulate the `client.input()` function calls to avoid repitition.
 ///
 /// Press and release a button or release it manually, if it is pressed.
