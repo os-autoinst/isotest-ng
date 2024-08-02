@@ -10,18 +10,40 @@ use image::DynamicImage::ImageRgba8;
 use vnc::{Rect, VncClient, VncError, VncEvent, X11Event};
 
 /// Receive a screenshot of the remote machine.
+///
+/// # Parameters
+///
+/// * client: `&VncClient` - The client instance used for connection.
+/// * file_path: `&str` - A file path you want to save your screenshot under as a `str`.
+/// * resolution: `Option<u32, u32>` - The resolution of the VNC session.
+/// * timeout: `Duration` - The `Duration` this function should wait for a `VncEvent` before it
+/// continues.
+///
+/// **NOTE**: The `resolution` must be passed to all calls of `read_screen` except the first one.
+/// If it is not passed, the function will attempt to detect the resolution from the VNC server.
+/// This only works for the first time though. The client cannot retrieve the resolution a second
+/// time by itself as long as it has not changed. We recommend to save the `Ok()` return value of
+/// the function so you have a global resolution tate to return to when calling.
+///
+/// # Returns
+///
+/// * `Ok((u32, u32))` - The resolution of the VNC machine we connect to.
+/// * `Err(VncError)` - Variation of `VncError` if something goes wrong.
 pub async fn read_screen(
     client: &VncClient,
     file_path: &str,
     resolution: Option<(u32, u32)>,
     timeout: Duration,
 ) -> Result<(u32, u32), VncError> {
-    // Request screen update
+    // Request screen update.
     client.input(X11Event::Refresh).await?;
 
     let mut img_parts: Vec<(Rect, Vec<u8>)> = Vec::new();
     let mut width;
     let mut height;
+
+    // Try to detect screen resolution of the remote machine if it has not been passed.
+    // **This will cause issues, if you try to use this functionality a second time.**
     match resolution {
         Some((x, y)) => {
             width = Some(x);
@@ -42,11 +64,12 @@ pub async fn read_screen(
             }
         },
     }
-    let path: &Path = Path::new(file_path);
 
+    let path: &Path = Path::new(file_path);
     let idle_timer = Instant::now();
 
     loop {
+        // Poll new vnc events.
         match client.poll_event().await? {
             Some(x) => match x {
                 VncEvent::SetResolution(screen) => {
@@ -77,7 +100,7 @@ pub async fn read_screen(
     }
     let mut image: ImageBuffer<Rgba<u8>, _> = ImageBuffer::new(width.unwrap(), height.unwrap());
 
-    // Reconstruct image.
+    // Reconstruct image from snippets sent by VNC server.
     for (rect, data) in img_parts {
         let mut view = image.sub_image(
             rect.x as u32,
@@ -100,6 +123,9 @@ pub async fn read_screen(
             }
         }
     }
+
+    // Save image to file system in PNG format.
+    // NOTE: If the image color encoding is changed here, you must also change it in connection.rs!
     ImageRgba8(image)
         .save_with_format(path, ImageFormat::Png)
         .unwrap();
