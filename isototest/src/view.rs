@@ -39,8 +39,8 @@ pub async fn read_screen(
     client.input(X11Event::Refresh).await?;
 
     let mut img_parts: Vec<(Rect, Vec<u8>)> = Vec::new();
-    let mut width;
-    let mut height;
+    let mut width: Option<u32>;
+    let mut height: Option<u32>;
 
     // Try to detect screen resolution of the remote machine if it has not been passed.
     // **This will cause issues, if you try to use this functionality a second time.**
@@ -66,7 +66,7 @@ pub async fn read_screen(
     }
 
     let path: &Path = Path::new(file_path);
-    let idle_timer = Instant::now();
+    let idle_timer: Instant = Instant::now();
 
     loop {
         // Poll new vnc events.
@@ -84,10 +84,13 @@ pub async fn read_screen(
                 }
                 VncEvent::Error(e) => {
                     eprintln!("[error] {}", e);
-                    break;
+                    return Err(VncError::General(e));
                 }
                 x => {
-                    println!("{:?}", x);
+                    println!(
+                        "[warning] Function 'read_screen' got unexpected event '{:?}'.",
+                        x
+                    );
                     break;
                 }
             },
@@ -98,6 +101,7 @@ pub async fn read_screen(
             }
         }
     }
+
     let mut image: ImageBuffer<Rgba<u8>, _> = ImageBuffer::new(width.unwrap(), height.unwrap());
 
     // Reconstruct image from snippets sent by VNC server.
