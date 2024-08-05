@@ -49,8 +49,13 @@ pub async fn create_vnc_client(
         .add_encoding(vnc::VncEncoding::Zrle)
         .add_encoding(vnc::VncEncoding::CopyRect)
         .add_encoding(vnc::VncEncoding::Raw)
+        .add_encoding(vnc::VncEncoding::Trle)
+        .add_encoding(vnc::VncEncoding::CursorPseudo)
+        .add_encoding(vnc::VncEncoding::DesktopSizePseudo)
         .allow_shared(true)
-        .set_pixel_format(PixelFormat::bgra())
+        // NOTE: If the color encoding is changed in the following line, you must also change it in
+        // view.rs to avoid the saved screenshots from having swapped colors.
+        .set_pixel_format(PixelFormat::rgba())
         .build()?
         .try_start()
         .await?

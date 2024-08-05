@@ -1,9 +1,11 @@
 use isototest::action::write_to_console;
 use isototest::connection::create_vnc_client;
+use isototest::view::read_screen;
 use nix::sys::socket::{self, sockaddr_in, AddressFamily, SockType};
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::ptr::null_mut;
+use std::time::Duration;
 use tokio::{
     self,
     net::{TcpListener, TcpStream},
@@ -78,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let addr = vnc_server.srv.as_ref().unwrap().local_addr()?;
     let addr = "";
     let psw = "password".to_string();
-    let client = match create_vnc_client(addr.to_string(), Some(psw)).await {
+    let mut client = match create_vnc_client(addr.to_string(), Some(psw.clone())).await {
         Ok(client) => {
             println!("Client created. Handshake successful.");
             client
@@ -89,7 +91,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    match write_to_console(&client, include_str!("test.txt").to_string(), None).await {
+    let mut res;
+    match read_screen(&client, "screenshot.png", None, Duration::from_secs(1)).await {
+        Ok(x) => {
+            println!("Screenshot saved!");
+            res = x;
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+            exit(1);
+        }
+    }
+
+    match write_to_console(&client, include_str!("hello.txt").to_string(), None).await {
         Ok(_) => {
             println!("Test text sent!");
         }
@@ -99,5 +113,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    match read_screen(&client, "screenshot2.png", Some(res), Duration::from_secs(1)).await {
+        Ok(_) => {
+            println!("Screenshot saved!");
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+            exit(1);
+        }
+    }
+    match read_screen(&client, "screenshot3.png", Some(res), Duration::from_secs(1)).await {
+        Ok(_) => {
+            println!("Screenshot saved!");
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+            exit(1);
+        }
+    }
     Ok(())
 }
