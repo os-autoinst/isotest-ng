@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 //! This module handles the VncClient and its connection to the VncServer.
+use log::{debug, error, info};
 use tokio::{self, net::TcpStream};
 use vnc::{PixelFormat, VncClient, VncConnector, VncError};
+
+use crate::logging::LOG_TARGET;
 
 /// Create a new VNC client.
 ///
@@ -29,19 +32,23 @@ pub async fn create_vnc_client(
     target_ip: String,
     mut psw: Option<String>,
 ) -> Result<VncClient, VncError> {
+    info!(target: LOG_TARGET, "Creating VNC client for target IP: '{}'", target_ip);
+
     if psw.is_none() {
+        debug!("No password provided; using empty password.");
         psw = Some(String::new());
     }
 
     let tcp: TcpStream = match TcpStream::connect(target_ip).await {
         Ok(tcp) => tcp,
         Err(e) => {
+            error!(target: LOG_TARGET, "Failed to connect: {}", e);
             let err = VncError::IoError(e);
             return Err(err);
         }
     };
 
-    let vnc: VncClient = VncConnector::new(tcp)
+    let vnc: VncClient = match VncConnector::new(tcp)
         .set_auth_method(async move { Ok(psw.unwrap()) })
         .add_encoding(vnc::VncEncoding::Tight)
         .add_encoding(vnc::VncEncoding::Zrle)
@@ -54,10 +61,19 @@ pub async fn create_vnc_client(
         // NOTE: If the color encoding is changed in the following line, you must also change it in
         // view.rs to avoid the saved screenshots from having swapped colors.
         .set_pixel_format(PixelFormat::rgba())
-        .build()?
-        .try_start()
-        .await?
-        .finish()?;
+        .build()
+    {
+        Ok(vnc) => vnc,
+        Err(e) => {
+            error!(target: LOG_TARGET, "Failed to build VNC client: {}", e);
+            return Err(e);
+        }
+    }
+    .try_start()
+    .await?
+    .finish()?;
+
+    info!("VNC Client successfully built and started.");
 
     Ok(vnc)
 }
@@ -74,10 +90,17 @@ pub async fn create_vnc_client(
 /// * `Err(VncError)` - Escalates the `VncError` upwards, if the `.close()` function of `vnc-rs`
 /// returns an error.
 pub async fn kill_client(client: VncClient) -> Result<(), VncError> {
+    info!(target: LOG_TARGET, "Closing connection...");
     match client.close().await {
-        Ok(_) => {}
-        Err(e) => return Err(e),
+        Ok(_) => {
+            info!(target: LOG_TARGET, "Connection closed.");
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Unable to close connection: {}", e);
+            return Err(e);
+        }
     };
     drop(client);
+    info!(target: LOG_TARGET, "Client dropped.");
     Ok(())
 }

@@ -10,6 +10,10 @@ use image::ImageBuffer;
 use image::DynamicImage::ImageRgba8;
 use vnc::{Rect, VncClient, VncError, VncEvent, X11Event};
 
+use log::{error, info, warn};
+
+use crate::logging::LOG_TARGET;
+
 /// Receive a screenshot of the remote machine.
 ///
 /// # Parameters
@@ -36,6 +40,7 @@ pub async fn read_screen(
     resolution: Option<(u32, u32)>,
     timeout: Duration,
 ) -> Result<(u32, u32), VncError> {
+    info!(target: LOG_TARGET, "Requesting screenshot...");
     // Request screen update.
     client.input(X11Event::Refresh).await?;
 
@@ -47,18 +52,20 @@ pub async fn read_screen(
     // **This will cause issues, if you try to use this functionality a second time.**
     match resolution {
         Some((x, y)) => {
+            info!(target: LOG_TARGET, "Resolution provided; proceeding...");
             width = Some(x);
             height = Some(y);
         }
         None => match client.recv_event().await? {
             VncEvent::SetResolution(screen) => {
-                println!("Screen resolution: {}x{}", screen.width, screen.height);
+                info!(target: LOG_TARGET, "Resolution received. Screen resolution: {}x{}", screen.width, screen.height);
                 width = Some(screen.width as u32);
                 height = Some(screen.height as u32);
 
                 client.input(X11Event::Refresh).await?;
             }
             _ => {
+                error!(target: LOG_TARGET, "Failed to retrieve screen resolution. Aborting...");
                 return Err(VncError::General(
                     "[error] No resolution found!".to_string(),
                 ))
@@ -88,8 +95,8 @@ pub async fn read_screen(
                     return Err(VncError::General(e));
                 }
                 x => {
-                    println!(
-                        "[warning] Function 'read_screen' got unexpected event '{:?}'.",
+                    warn!(target: LOG_TARGET,
+                        "Function 'read_screen' got unexpected event '{:?}'.",
                         x
                     );
                     break;
@@ -97,6 +104,7 @@ pub async fn read_screen(
             },
             None => {
                 if idle_timer.elapsed() >= timeout {
+                    warn!(target: LOG_TARGET, "Timeout while waiting for VNC Event.");
                     break;
                 }
             }
@@ -135,6 +143,6 @@ pub async fn read_screen(
         .save_with_format(path, ImageFormat::Png)
         .unwrap();
 
-    println!("Screenshot saved to {}", file_path);
+    info!(target: LOG_TARGET, "Screenshot saved to '{}'", file_path);
     Ok((width.unwrap(), height.unwrap()))
 }

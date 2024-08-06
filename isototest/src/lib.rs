@@ -65,7 +65,18 @@
 //!     Ok(())
 //! }
 //! ```
+//!
+//! ## Optional Features
+//!
+//! * `default-logging` - Provides you with a sensible logger configuration using the `env_logger`
+//! crate.
 
 pub mod action;
 pub mod connection;
+pub mod logging;
 pub(crate) mod types;
+
+#[cfg(feature = "default-logging")]
+pub fn init_logging() {
+    logging::initialize_default_logging();
+}

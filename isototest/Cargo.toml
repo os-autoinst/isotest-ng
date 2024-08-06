@@ -9,8 +9,14 @@ license = "GPL-2.0"
 
 [dependencies]
 image = "0.25.2"
+log = "0.4.22"
 tokio = "1.38.1"
 vnc-rs = "0.5.1"
+env_logger = { version= "0.10", optional=true }
 
 [dev-dependencies]
 mockito = "1.4.0"
+
+[features]
+# Feature to enable default logging configuration
+default-logging = ["env_logger"]
