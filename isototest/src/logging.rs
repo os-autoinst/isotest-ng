@@ -12,11 +12,11 @@ pub const LOG_TARGET: &str = "[isototest]";
 pub fn initialize_default_logging() {
     Builder::new()
         .filter_level(log::LevelFilter::Info)
-        .format(|bug, record| {
+        .format(|buf, record| {
             writeln!(
                 buf,
                 "{} [{}] {}: {}",
-                buf.timestamp,
+                buf.timestamp(),
                 record.level(),
                 record.target(),
                 record.args()

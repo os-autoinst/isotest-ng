@@ -81,7 +81,7 @@ pub async fn read_screen(
         match client.poll_event().await? {
             Some(x) => match x {
                 VncEvent::SetResolution(screen) => {
-                    println!("Screen resolution: {}x{}", screen.width, screen.height);
+                    info!(target: LOG_TARGET, "Screen resolution: {}x{}", screen.width, screen.height);
                     width = Some(screen.width as u32);
                     height = Some(screen.height as u32);
 
@@ -91,7 +91,7 @@ pub async fn read_screen(
                     img_parts.push((rect, data));
                 }
                 VncEvent::Error(e) => {
-                    eprintln!("[error] {}", e);
+                    error!(target: LOG_TARGET, "Error event received: {}", e);
                     return Err(VncError::General(e));
                 }
                 x => {
