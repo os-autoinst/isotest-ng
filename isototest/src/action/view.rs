@@ -1,3 +1,4 @@
+//! # View module
 use image::{GenericImage, ImageFormat, Rgba};
 use std::{
     path::Path,

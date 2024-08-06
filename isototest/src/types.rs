@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Christopher Hock <christopher-hock@suse.com>
 // SPDX-LicenseIdentifier: GPL-2.0-or-later
 
+//! Common types for `isototest`.
+
 /// Type of key press.
 ///
 /// # Members
@@ -8,7 +10,7 @@
 /// * `Press` - To signal a press and hold of the given key.
 /// * `Release` - To signal the release of a given key.
 /// * `Tap` - To signal a tap (press & release) of the given key.
-pub enum KeyEventType {
+pub(crate) enum KeyEventType {
     Press,
     Release,
     Tap,
@@ -19,7 +21,7 @@ pub enum KeyEventType {
 ///
 /// Oriented on [this table](https://theasciicode.com.ar/ascii-printable-characters/exclamation-mark-ascii-code-33.html)
 /// Hex reprentations taken from [here](https://www.rfc-editor.org/rfc/rfc6143.html#section-7.5.4).
-pub enum KeyCode {
+pub(crate) enum KeyCode {
     NULL = 00,
     SOH = 01,
     STX = 02,

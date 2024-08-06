@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightTest: Christopher Hock <christopher.hock@suse.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-//! # Connection Module
-//!
 //! This module handles the VncClient and its connection to the VncServer.
 use tokio::{self, net::TcpStream};
 use vnc::{PixelFormat, VncClient, VncConnector, VncError};
@@ -64,7 +62,7 @@ pub async fn create_vnc_client(
     Ok(vnc)
 }
 
-/// Stop VNC engine, release all resources
+/// Stop VNC engine, release all resources.
 ///
 /// # Parameters
 ///
