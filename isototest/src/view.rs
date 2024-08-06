@@ -23,7 +23,7 @@ use vnc::{Rect, VncClient, VncError, VncEvent, X11Event};
 /// If it is not passed, the function will attempt to detect the resolution from the VNC server.
 /// This only works for the first time though. The client cannot retrieve the resolution a second
 /// time by itself as long as it has not changed. We recommend to save the `Ok()` return value of
-/// the function so you have a global resolution tate to return to when calling.
+/// the function so you have a global resolution state to return to when calling.
 ///
 /// # Returns
 ///
