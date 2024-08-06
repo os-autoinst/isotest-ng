@@ -11,8 +11,10 @@
 extern crate proc_macro;
 use std::{thread::sleep, time::Duration};
 
+use log::info;
 use vnc::{client::VncClient, ClientKeyEvent, VncError, X11Event};
 
+use crate::logging::LOG_TARGET;
 use crate::types::{KeyCode, KeyEventType};
 
 /// Sleep.
@@ -52,6 +54,7 @@ pub async fn write_to_console(
     framerate: Option<f64>,
 ) -> Result<(), VncError> {
     // Translate each character to a keycode
+    info!(target: LOG_TARGET, "Sending text '{}' with intervall of {}FPS....", text, framerate.unwrap_or(30 as f64));
     let mut keycode: u32;
 
     for ch in text.chars() {
@@ -72,6 +75,7 @@ pub async fn write_to_console(
             press_button(client, modifier, KeyEventType::Release, framerate).await?;
         }
     }
+    info!(target: LOG_TARGET, "Text '{}' sent.", text);
     Ok(())
 }
 
