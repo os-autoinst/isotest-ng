@@ -1,8 +1,9 @@
 //! # View module
-use image::{GenericImage, ImageFormat, Rgba};
+//!
+//! This module handles everything related to requesting visual data from the VNC server.
+use image::{DynamicImage, GenericImage, ImageFormat, Rgba};
 use std::{
-    path::Path,
-    time::{Duration, Instant},
+    path::Path, sync::{Arc, Mutex}, time::{Duration, Instant}
 };
 
 use image::ImageBuffer;
@@ -23,6 +24,8 @@ use crate::logging::LOG_TARGET;
 /// * resolution: `Option<u32, u32>` - The resolution of the VNC session.
 /// * timeout: `Duration` - The `Duration` this function should wait for a `VncEvent` before it
 /// continues.
+/// * compose: `bool` - Toggle wheather to overlay new image data onto the previous image to create
+/// a full, updated new screenshot.
 ///
 /// **NOTE**: The `resolution` must be passed to all calls of `read_screen` except the first one.
 /// If it is not passed, the function will attempt to detect the resolution from the VNC server.
@@ -39,6 +42,7 @@ pub async fn read_screen(
     file_path: &str,
     resolution: Option<(u32, u32)>,
     timeout: Duration,
+    compose: bool,
 ) -> Result<(u32, u32), VncError> {
     info!(target: LOG_TARGET, "Requesting screenshot...");
     // Request screen update.
@@ -75,6 +79,12 @@ pub async fn read_screen(
 
     let path: &Path = Path::new(file_path);
     let idle_timer: Instant = Instant::now();
+    let prev_image: Option<Arc<Mutex<DynamicImage>>> = if compose {
+        let img = DynamicImage::new_rgba8(width.unwrap(), height.unwrap());
+        Some(Arc::new(Mutex::new(img)))
+    } else {
+        None
+    };
 
     loop {
         // Poll new vnc events.
@@ -137,6 +147,8 @@ pub async fn read_screen(
         }
     }
 
+    // TODO: If compose flag set, compose the new image onto the old one.
+
     // Save image to file system in PNG format.
     // NOTE: If the image color encoding is changed here, you must also change it in connection.rs!
     ImageRgba8(image)
@@ -145,4 +157,54 @@ pub async fn read_screen(
 
     info!(target: LOG_TARGET, "Screenshot saved to '{}'", file_path);
     Ok((width.unwrap(), height.unwrap()))
+}
+
+/// Compose new image data to the previous image and save copy.
+///
+/// This is needed for subsequent calls of `read_screen` as the VNC server will only return the
+/// last pixels changed since the previous request.
+/// While this is handy for performance, it is no recommended for our use case as we need to have a
+/// full picture of the screen to compare the current state of the test worker against expected
+/// output.
+///
+/// # Parameters
+///
+/// * prev_image: `Arc<Mutex<DynamicImage>>` - The previous image the new data must be layed on top
+/// of.
+/// * rect: `Rect` - The rectangle specifying the area and position of the new data.
+/// * data: `Vec<u8>` - The mew üoxeö data that needs to be layed ontop of the old image.
+///
+/// # Returns
+///
+/// * `Ok(())` - If the operation was successful.
+/// * `Err(VncError)` - If the parsing or combination of the images fails.
+fn compose_image(
+    prev_image: Arc<Mutex<DynamicImage>>,
+    rect: Rect,
+    data: Vec<u8>,
+) -> Result<(), VncError> {
+    info!(target: LOG_TARGET, "Combining new pixel data with previous image.");
+
+    // Create a new buffer representing the new image data to be comibined onto the old image
+    let image_buffer: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
+        rect.width as u32,
+        rect.height as u32,
+        data,
+    ).ok_or_else(|| VncError::General("Failed to create image buffer.".to_string()))?;
+
+    // Lock the previous image to gain mutable access on a new thread.
+    let mut prev_image = prev_image.lock().map_err(|_| VncError::General("Failed to lock prev_image.".to_string()))?;
+
+    // Iterate over the new pixel data and update the corresponding iamge data
+    for x in 0..rect.width {
+        for y in 0..rect.height {
+            // Update the pixel in the previous image at the specified position
+            prev_image.put_pixel(
+                (rect.x + x) as u32,
+                (rect.y + y) as u32,
+                image_buffer.get_pixel(x as u32, y as u32).to_owned(),
+            );
+        }
+    }
+    Ok(())
 }
