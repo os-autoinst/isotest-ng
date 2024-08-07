@@ -17,7 +17,6 @@
 //! use isototest::action::view::read_screen;
 //! use tokio::{self};
 //! use std::process::exit;
-//! use std::time::Duration;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,20 +30,6 @@
 //!         Err(e) => {
 //!             eprintln!("[Error] {:?}", e);
 //!             exit(1)
-//!         }
-//!     };
-//!
-//!     // Request screenshot from the remote machine, save the resolution as the client can not
-//!     // request it again as long as it does not change.
-//!     let res;
-//!     let mut resolution = match read_screen(&client, "screenshot.png", None, Duration::from_secs(1)).await {
-//!         Ok(x) => {
-//!             println!("Screenshot received!");
-//!             res = x;
-//!         }
-//!         Err(e) => {
-//!             eprintln!("{}", e);
-//!             exit(1);
 //!         }
 //!     };
 //!

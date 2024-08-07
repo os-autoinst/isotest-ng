@@ -1,13 +1,14 @@
 //! # View module
-use image::{GenericImage, ImageFormat, Rgba};
+//!
+//! This module handles everything related to requesting visual data from the VNC server.
+use chrono::Utc;
+use image::ImageBuffer;
+use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat, Rgba};
 use std::{
+    env,
     path::Path,
     time::{Duration, Instant},
 };
-
-use image::ImageBuffer;
-
-use image::DynamicImage::ImageRgba8;
 use vnc::{Rect, VncClient, VncError, VncEvent, X11Event};
 
 use log::{error, info, warn};
@@ -36,7 +37,7 @@ use crate::logging::LOG_TARGET;
 /// * `Err(VncError)` - Variation of `VncError` if something goes wrong.
 pub async fn read_screen(
     client: &VncClient,
-    file_path: &str,
+    file_path: Option<&Path>,
     resolution: Option<(u32, u32)>,
     timeout: Duration,
 ) -> Result<(u32, u32), VncError> {
@@ -73,7 +74,6 @@ pub async fn read_screen(
         },
     }
 
-    let path: &Path = Path::new(file_path);
     let idle_timer: Instant = Instant::now();
 
     loop {
@@ -137,12 +137,106 @@ pub async fn read_screen(
         }
     }
 
-    // Save image to file system in PNG format.
-    // NOTE: If the image color encoding is changed here, you must also change it in connection.rs!
-    ImageRgba8(image)
-        .save_with_format(path, ImageFormat::Png)
-        .unwrap();
+    let mut prefix;
+    match file_path {
+        Some(x) => {
+            prefix = x.to_owned();
+        }
+        None => {
+            let dir = env::current_dir()?;
+            prefix = dir.to_owned();
+        }
+    }
 
-    info!(target: LOG_TARGET, "Screenshot saved to '{}'", file_path);
+    let last_modified_file = std::fs::read_dir(&prefix)
+        .expect("Couldn't access local directory")
+        .flatten() // Remove failed
+        .filter(|f| f.metadata().unwrap().is_file()) // Filter out directories (only consider files)
+        .max_by_key(|x| x.metadata().unwrap().modified().unwrap()); // Get the most recently modified file
+
+    prefix.push(format!("frame_{}.png", Utc::now()));
+
+    match last_modified_file {
+        Some(x) => {
+            let prev_image = image::open(x.path()).unwrap();
+            // Layer the image data on top of the previous image.
+            let composed_image = compose_image(&prev_image, &DynamicImage::ImageRgba8(image));
+            // image = prev_image.to_rgba8()
+            composed_image
+                .save_with_format(&prefix, ImageFormat::Png)
+                .unwrap();
+        }
+        None => {
+            // Save image to file system in PNG format.
+            // NOTE: If the image color encoding is changed here, you must also change it in connection.rs!
+            DynamicImage::ImageRgba8(image)
+                .save_with_format(&prefix, ImageFormat::Png)
+                .unwrap();
+        }
+    }
+
+    info!(target: LOG_TARGET, "Screenshot saved to '{}'", prefix.to_str().unwrap());
     Ok((width.unwrap(), height.unwrap()))
+}
+
+/// Compose new image data to the previous image and save copy.
+///
+/// This is needed for subsequent calls of `read_screen` as the VNC server will only return the
+/// last pixels changed since the previous request.
+/// While this is handy for performance, it is no recommended for our use case as we need to have a
+/// full picture of the screen to compare the current state of the test worker against expected
+/// output.
+///
+/// # Parameters
+///
+/// * `base: &DynamicImage` - The image you want to lay the delta on top of.
+/// * `overlay: &DynamicImage` - The new image data, which only includes this pixels that have
+/// changed since the last screen request.
+///
+/// # Returns
+///
+/// * `DynamicImage` - New `DynamicImage` consisting of the already read parts of the screen
+/// overlayed with the requested delta.
+fn compose_image(prev_image: &DynamicImage, new: &DynamicImage) -> DynamicImage {
+    info!(target: LOG_TARGET, "Combining new pixel data with previous image.");
+    let (width, height) = (prev_image.width(), prev_image.height());
+    let mut new_image = prev_image.to_rgba8();
+
+    for x in 0..width {
+        for y in 0..height {
+            let base_pixel = prev_image.get_pixel(x, y);
+            let overlay_pixel = new.get_pixel(x, y);
+            new_image.put_pixel(x, y, blend_pixels(base_pixel, overlay_pixel));
+        }
+    }
+    DynamicImage::ImageRgba8(new_image)
+}
+
+/// Blend two pixels together based on their alpha values (transparency).
+///
+/// This function blends a pixel from the base image with a pixel from the overlay image. The
+/// blending is done by considering the alpha (transparency) of the overlay pixel, which determines
+/// how much of the overlay pixel should be visible over the base pixel.
+///
+/// # Parameters
+///
+/// * `base: Rgba<u8>` - The base pixel.
+/// * `overlay: Rgba<u8>` - The pixel of the image you want to overlay.
+///
+/// # Returns
+///
+/// * `Rgba<u8>` - The pixel's new alpha value.
+fn blend_pixels(base: Rgba<u8>, overlay: Rgba<u8>) -> Rgba<u8> {
+    let alpha_overlay = overlay[3] as f32 / 255.0;
+
+    let func = |b, o| -> u8 {
+        (((b as f32 * (1.0 - alpha_overlay)) + (o as f32 * alpha_overlay)) * 255.0) as u8
+    };
+
+    Rgba([
+        func(base[0], overlay[0]),
+        func(base[1], overlay[1]),
+        func(base[2], overlay[2]),
+        255 as u8,
+    ])
 }
