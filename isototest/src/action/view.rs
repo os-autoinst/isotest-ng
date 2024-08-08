@@ -20,7 +20,8 @@ use crate::logging::LOG_TARGET;
 /// # Parameters
 ///
 /// * client: `&VncClient` - The client instance used for connection.
-/// * file_path: `&str` - A file path you want to save your screenshot under as a `str`.
+/// * file_path: `Option<&Path>` - A file path you want to save your screenshot under as a `&Path`.
+/// (If `None` -> `CWD` is set as output dir.)
 /// * resolution: `Option<u32, u32>` - The resolution of the VNC session.
 /// * timeout: `Duration` - The `Duration` this function should wait for a `VncEvent` before it
 /// continues.
