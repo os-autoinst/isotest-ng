@@ -2,8 +2,9 @@
 //!
 //! This module handles everything related to requesting visual data from the VNC server.
 use chrono::Utc;
-use image::ImageBuffer;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat, Rgba};
+use image::{ImageBuffer, RgbaImage};
+use std::path::PathBuf;
 use std::{
     env,
     path::Path,
@@ -138,7 +139,7 @@ pub async fn read_screen(
         }
     }
 
-    let mut prefix;
+    let mut prefix: PathBuf;
     match file_path {
         Some(x) => {
             prefix = x.to_owned();
@@ -149,7 +150,7 @@ pub async fn read_screen(
         }
     }
 
-    let last_modified_file = std::fs::read_dir(&prefix)
+    let last_modified_file: Option<std::fs::DirEntry> = std::fs::read_dir(&prefix)
         .expect("Couldn't access local directory")
         .flatten() // Remove failed
         .filter(|f| f.metadata().unwrap().is_file()) // Filter out directories (only consider files)
@@ -159,9 +160,10 @@ pub async fn read_screen(
 
     match last_modified_file {
         Some(x) => {
-            let prev_image = image::open(x.path()).unwrap();
+            let prev_image: DynamicImage = image::open(x.path()).unwrap();
             // Layer the image data on top of the previous image.
-            let composed_image = compose_image(&prev_image, &DynamicImage::ImageRgba8(image));
+            let composed_image: DynamicImage =
+                compose_image(&prev_image, &DynamicImage::ImageRgba8(image));
             // image = prev_image.to_rgba8()
             composed_image
                 .save_with_format(&prefix, ImageFormat::Png)
@@ -200,13 +202,13 @@ pub async fn read_screen(
 /// overlayed with the requested delta.
 fn compose_image(prev_image: &DynamicImage, new: &DynamicImage) -> DynamicImage {
     info!(target: LOG_TARGET, "Combining new pixel data with previous image.");
-    let (width, height) = (prev_image.width(), prev_image.height());
-    let mut new_image = prev_image.to_rgba8();
+    let (width, height): (u32, u32) = (prev_image.width(), prev_image.height());
+    let mut new_image: RgbaImage = prev_image.to_rgba8();
 
     for x in 0..width {
         for y in 0..height {
-            let base_pixel = prev_image.get_pixel(x, y);
-            let overlay_pixel = new.get_pixel(x, y);
+            let base_pixel: Rgba<u8> = prev_image.get_pixel(x, y);
+            let overlay_pixel: Rgba<u8> = new.get_pixel(x, y);
             new_image.put_pixel(x, y, blend_pixels(base_pixel, overlay_pixel));
         }
     }
@@ -228,7 +230,7 @@ fn compose_image(prev_image: &DynamicImage, new: &DynamicImage) -> DynamicImage 
 ///
 /// * `Rgba<u8>` - The pixel's new alpha value.
 fn blend_pixels(base: Rgba<u8>, overlay: Rgba<u8>) -> Rgba<u8> {
-    let alpha_overlay = overlay[3] as f32 / 255.0;
+    let alpha_overlay: f32 = overlay[3] as f32 / 255.0;
 
     let func = |b, o| -> u8 {
         (((b as f32 * (1.0 - alpha_overlay)) + (o as f32 * alpha_overlay)) * 255.0) as u8
