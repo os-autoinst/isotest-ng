@@ -64,7 +64,9 @@ pub mod logging;
 pub(crate) mod types;
 
 // Provide code on the root level of the library
+#[cfg(feature = "default-logging")]
 use crate::logging::LOG_TARGET;
+#[cfg(feature = "default-logging")]
 use log::{debug, trace};
 
 #[cfg(feature = "default-logging")]
