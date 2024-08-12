@@ -11,7 +11,7 @@
 //! VNC server. This instance must be passed to any function which communicated with the VNC
 //! server.
 //!
-//! ```no_run
+//! ``` no_run
 //! use isototest::connection::{create_vnc_client, kill_client};
 //! use isototest::action::keyboard::write_to_console;
 //! use isototest::action::view::read_screen;
@@ -56,12 +56,37 @@
 //! * `default-logging` - Provides you with a sensible logger configuration using the `env_logger`
 //! crate.
 
+// Organize library structure.
 pub mod action;
 pub mod connection;
+pub mod errors;
 pub mod logging;
 pub(crate) mod types;
 
+// Provide code on the root level of the library
+use crate::logging::LOG_TARGET;
+use log::{debug, trace};
+
 #[cfg(feature = "default-logging")]
-pub fn init_logging() {
-    logging::initialize_default_logging();
+pub fn init_logging(level: Option<&str>) -> Result<(), errors::util_errors::InvalidLogLevelError> {
+    match level {
+        Some("debug") => {
+            logging::init_debug_logging();
+            debug!(target: LOG_TARGET, "Logging initialized. Running with 'debug' log level.");
+            Ok(())
+        }
+        Some("trace") => {
+            logging::init_trace();
+            trace!(target: LOG_TARGET, "Logging initialized. Running with 'trace' log level.");
+            Ok(())
+        }
+        None => {
+            logging::init_default_logging();
+            Ok(())
+        }
+        Some(invalid) => Err(errors::util_errors::InvalidLogLevelError(format!(
+            "[error] Invalid log level defined: '{}'",
+            invalid
+        ))),
+    }
 }
