@@ -5,16 +5,24 @@ use std::fmt;
 
 #[derive(Debug)]
 #[cfg(feature = "default-logging")]
-/// Error used for checking given log level.
-/// Only available as part of the `default-logging` feature.
-pub struct InvalidLogLevelError(pub String);
+pub enum LoggingError {
+    LoggingInitError(String),
+    InvalidLogLevelError(String),
+}
 
 #[cfg(feature = "default-logging")]
-impl fmt::Display for InvalidLogLevelError {
+impl fmt::Display for LoggingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[error] Invalid log level: '{}'", self.0)
+        match self {
+            LoggingError::LoggingInitError(msg) => {
+                write!(f, "[error] Logging initialization failed: '{}'", msg)
+            }
+            LoggingError::InvalidLogLevelError(msg) => {
+                write!(f, "[error] Invalid log level: '{}'", msg)
+            }
+        }
     }
 }
 
 #[cfg(feature = "default-logging")]
-impl std::error::Error for InvalidLogLevelError {}
+impl std::error::Error for LoggingError {}

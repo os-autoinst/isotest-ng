@@ -65,30 +65,12 @@ pub(crate) mod types;
 
 // Provide code on the root level of the library
 #[cfg(feature = "default-logging")]
-use crate::logging::LOG_TARGET;
+use crate::logging::init_default_logging;
 #[cfg(feature = "default-logging")]
-use log::{debug, trace};
+use crate::errors::util_errors::LoggingError;
 
 #[cfg(feature = "default-logging")]
-pub fn init_logging(level: Option<&str>) -> Result<(), errors::util_errors::InvalidLogLevelError> {
-    match level {
-        Some("debug") => {
-            logging::init_debug_logging();
-            debug!(target: LOG_TARGET, "Logging initialized. Running with 'debug' log level.");
-            Ok(())
-        }
-        Some("trace") => {
-            logging::init_trace();
-            trace!(target: LOG_TARGET, "Logging initialized. Running with 'trace' log level.");
-            Ok(())
-        }
-        None => {
-            logging::init_default_logging();
-            Ok(())
-        }
-        Some(invalid) => Err(errors::util_errors::InvalidLogLevelError(format!(
-            "[error] Invalid log level defined: '{}'",
-            invalid
-        ))),
-    }
+pub fn init_logging(level: Option<&str>) -> Result<(), LoggingError> {
+    init_default_logging(level)?;
+    Ok(())
 }

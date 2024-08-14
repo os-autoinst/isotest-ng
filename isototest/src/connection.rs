@@ -57,7 +57,7 @@ pub async fn create_vnc_client(
         .add_encoding(vnc::VncEncoding::Trle)
         .add_encoding(vnc::VncEncoding::CursorPseudo)
         .add_encoding(vnc::VncEncoding::DesktopSizePseudo)
-        .allow_shared(true)
+        .allow_shared(true) // Allow for multiple other VNC sessions to be connected at once.
         // NOTE: If the color encoding is changed in the following line, you must also change it in
         // view.rs to avoid the saved screenshots from having swapped colors.
         .set_pixel_format(PixelFormat::rgba())
