@@ -1,11 +1,11 @@
 //! This module provides a sensible default configuration of a logging system.
 
 #[cfg(feature = "default-logging")]
+use crate::errors::util_errors::LoggingError;
+#[cfg(feature = "default-logging")]
 use env_logger::Builder;
 #[cfg(feature = "default-logging")]
 use std::io::Write;
-#[cfg(feature = "default-logging")]
-use crate::errors::util_errors::LoggingError;
 
 pub const LOG_TARGET: &str = "[isototest]";
 
@@ -22,18 +22,19 @@ pub(crate) fn init_default_logging(level: Option<&str>) -> Result<(), LoggingErr
         Some("info") | None => {
             log_builder(log::LevelFilter::Info);
             Ok(())
-        },
+        }
         Some("debug") => {
             log_builder(log::LevelFilter::Debug);
             Ok(())
-        },
+        }
         Some("trace") => {
             log_builder(log::LevelFilter::Trace);
             Ok(())
-        },
-        Some(invalid) => {
-            Err(LoggingError::InvalidLogLevelError(format!("Invalid log level '{}'!", invalid)))
         }
+        Some(invalid) => Err(LoggingError::InvalidLogLevelError(format!(
+            "Invalid log level '{}'!",
+            invalid
+        ))),
     }
 }
 
@@ -43,14 +44,13 @@ fn log_builder(level: log::LevelFilter) {
         .filter_level(level)
         .format(|buf, record| {
             writeln!(
-            buf,
-            "{} [{}] {}: {}",
-            buf.timestamp(),
-            record.level(),
-            record.target(),
-            record.args()
-        )
+                buf,
+                "{} [{}] {}: {}",
+                buf.timestamp(),
+                record.level(),
+                record.target(),
+                record.args()
+            )
         })
         .init();
 }
-

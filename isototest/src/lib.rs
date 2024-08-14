@@ -65,9 +65,9 @@ pub(crate) mod types;
 
 // Provide code on the root level of the library
 #[cfg(feature = "default-logging")]
-use crate::logging::init_default_logging;
-#[cfg(feature = "default-logging")]
 use crate::errors::util_errors::LoggingError;
+#[cfg(feature = "default-logging")]
+use crate::logging::init_default_logging;
 
 #[cfg(feature = "default-logging")]
 pub fn init_logging(level: Option<&str>) -> Result<(), LoggingError> {
