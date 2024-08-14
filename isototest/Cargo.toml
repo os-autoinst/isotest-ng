@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "A library for executing openQA test on workers"
 readme = "README.md"
-repository = "https://github.com/ByteOtter/isotest-ng/tree/main/isototest"
+repository = "https://github.com/os-autoinst/isotest-ng/tree/main/isototest"
 license = "GPL-2.0"
 
 [dependencies]
