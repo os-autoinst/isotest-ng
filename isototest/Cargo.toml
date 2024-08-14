@@ -4,12 +4,20 @@ version = "0.1.0"
 edition = "2021"
 description = "A library for executing openQA test on workers"
 readme = "README.md"
-repository = "https://github.com/ByteOtter/isotest-ng/tree/main/isototest"
+repository = "https://github.com/os-autoinst/isotest-ng/tree/main/isototest"
 license = "GPL-2.0"
 
 [dependencies]
+image = "0.25.2"
+log = "0.4.22"
 tokio = "1.38.1"
 vnc-rs = "0.5.1"
+env_logger = { version= "0.11.5", optional=true }
+chrono = "0.4.38"
 
 [dev-dependencies]
 mockito = "1.4.0"
+
+[features]
+# Feature to enable default logging configuration
+default-logging = ["env_logger"]

@@ -1,11 +1,21 @@
-rust:
-- **/**/*.rs
-
 dependencies:
 - Cargo.toml
-- **/Cargo.toml
-- **/Cargo.lock
+- isototest/Cargo.toml
+- isototest/Cargo.lock
+- isotoenv/Cargo.toml
+- isotoenv/Cargo.lock
+- isotomachine/Cargo.toml
+- isotomachine/Cargo.lock
 - Cargo.lock
+
+isototest:
+- isototest/*
+
+isotomachine:
+- isotomachine/*
+
+isotoenv:
+- isotoenv/*
 
 documentation:
 - docs/**

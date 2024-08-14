@@ -1,6 +1,6 @@
-//! Prepare a [openQA](https://open.qa) test worker.
+//! Prepare a test environment for [openQA](https://open.qa).
 //!
-//! This crate is responsible for setting up a `openQA` worker machine or VM.
+//! This crate is responsible for preparing an `openQA` worker machine or VM for executing the test suite.
 //!
 //! ## Optional Features
 //!

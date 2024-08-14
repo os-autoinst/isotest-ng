@@ -1,0 +1,18 @@
+[package]
+name = "isotoenv"
+version = "0.1.0"
+edition = "2021"
+description = "A library for creating an openQA test environment on a designated target"
+readme = "README.md"
+repository = "https://github.com/os-autoinst/isotest-ng/tree/main/isotoenv"
+license = "GPL-2.0"
+
+[dependencies]
+log = "0.4.22"
+env_logger = { version = "0.11.5", optional = true }
+
+[dev-dependencies]
+
+[features]
+# Feature to enable default logging configuration
+default-logging = ["env_logger"]

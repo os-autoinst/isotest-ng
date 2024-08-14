@@ -1,13 +1,20 @@
 // SPDX-FileCopyrightText: Christopher Hock <christopher-hock@suse.com>
 // SPDX-LicenseIdentifier: GPL-2.0-or-later
-//! Action
+//! # Keyboard Module
 //!
-//! This module handles interactions between the VncClient and VncServer.
+//! This module handles text-based interactions between the VncClient and VncServer.
+//!
+//! It uses [`X11Event::KeyEvent`](https://docs.rs/vnc-rs/0.5.1/vnc/event/struct.ClientKeyEvent.html) to send
+//! individual key press or release events to the VNC server.
+//!
+//! To view what characters and control sequences are currently supported, see [`crate::types`].
 extern crate proc_macro;
 use std::{thread::sleep, time::Duration};
 
+use log::info;
 use vnc::{client::VncClient, ClientKeyEvent, VncError, X11Event};
 
+use crate::logging::LOG_TARGET;
 use crate::types::{KeyCode, KeyEventType};
 
 /// Sleep.
@@ -25,7 +32,7 @@ macro_rules! wait_for_frame {
     };
 }
 
-/// Write given text to console
+/// Send given text to VNC server.
 ///
 /// Uses `X11Event`s to send keypresses to the server. According to the [RFC](https://www.rfc-editor.org/rfc/rfc6143.html#section-7.5.4)
 /// it does not matter whether the X-Window System is running or not.
@@ -34,6 +41,8 @@ macro_rules! wait_for_frame {
 ///
 /// * client: `&VncClient` - The client to be used for connections
 /// * text: `String` - The text to write.
+/// * framerate: `Option<f64>` - The framerate of the remote machine. Used to time intervals in
+/// which key signals are sent. If `None`, signal intervals are calculated according to a default. (30FPS)
 ///
 /// # Returns
 ///
@@ -45,6 +54,7 @@ pub async fn write_to_console(
     framerate: Option<f64>,
 ) -> Result<(), VncError> {
     // Translate each character to a keycode
+    info!(target: LOG_TARGET, "Sending text '{}' with intervall of {}FPS....", text, framerate.unwrap_or(30 as f64));
     let mut keycode: u32;
 
     for ch in text.chars() {
@@ -65,18 +75,13 @@ pub async fn write_to_console(
             press_button(client, modifier, KeyEventType::Release, framerate).await?;
         }
     }
+    info!(target: LOG_TARGET, "Text '{}' sent.", text);
     Ok(())
-}
-
-#[allow(unused)]
-/// Receive a screenshot of the remote machine.
-pub async fn read_screen(client: &VncClient) -> Result<(), VncError> {
-    todo!("Not implemented yet!")
 }
 
 /// Encapsulate the `client.input()` function calls to avoid repitition.
 ///
-/// Press and release a button or release it manually, if it is pressed.
+/// Will put the given key into a state according to the [crate::types::KeyEventType] parameter.
 ///
 /// # Parameters
 ///
@@ -192,7 +197,10 @@ fn framerate_to_nanos(rate: Option<f64>) -> Result<Duration, VncError> {
     }
 }
 
-/// Assign a given character its corresponding `VirtualKeyCode`.
+/// Assign a given character its corresponding [`crate::types::KeyCode`].
+///
+/// Will return the u32 representation of the actualkeycode as this is required by
+/// [`vnc-rs`](https://docs.rs/vnc-rs/0.5.1/vnc/event/struct.ClientKeyEvent.html)
 ///
 /// # Parameters
 ///
