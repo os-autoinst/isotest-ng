@@ -8,7 +8,7 @@
 //! ## Example
 //!
 //! To use this crate, you need to create a `VncClient` instance, which will connect you to your
-//! VNC server. This instance must be passed to any function which communicated with the VNC
+//! VNC server. This instance must be passed to any function which communicates with the VNC
 //! server.
 //!
 //! ``` no_run
