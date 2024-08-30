@@ -1,10 +1,12 @@
-use isototest::action::write_to_console;
+use isototest::action::keyboard::write_to_console;
+use isototest::action::view::read_screen;
 use isototest::connection::create_vnc_client;
-use isototest::view::read_screen;
 use nix::sys::socket::{self, sockaddr_in, AddressFamily, SockType};
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::ptr::null_mut;
+use std::str::FromStr;
 use std::time::Duration;
 use tokio::{
     self,
@@ -91,19 +93,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let dir = Path::new("screenshots/");
+
     let mut res;
-    match read_screen(&client, "screenshot.png", None, Duration::from_secs(1)).await {
+    match read_screen(
+        &client,
+        Some(dir),
+        None,
+        Duration::from_secs(1)
+    )
+    .await
+    {
         Ok(x) => {
             println!("Screenshot saved!");
             res = x;
-        },
+        }
         Err(e) => {
             eprintln!("{}", e);
             exit(1);
         }
     }
 
-    match write_to_console(&client, include_str!("hello.txt").to_string(), None).await {
+    match write_to_console(&client, include_str!("test_commands.txt").to_string(), None).await {
         Ok(_) => {
             println!("Test text sent!");
         }
@@ -113,19 +124,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    match read_screen(&client, "screenshot2.png", Some(res), Duration::from_secs(1)).await {
+    match read_screen(
+        &client,
+        Some(dir),
+        Some(res),
+        Duration::from_secs(1)
+    )
+    .await
+    {
         Ok(_) => {
             println!("Screenshot saved!");
-        },
+        }
         Err(e) => {
             eprintln!("{}", e);
             exit(1);
         }
     }
-    match read_screen(&client, "screenshot3.png", Some(res), Duration::from_secs(1)).await {
+    match read_screen(
+        &client,
+        Some(dir),
+        Some(res),
+        Duration::from_secs(1)
+    )
+    .await
+    {
         Ok(_) => {
             println!("Screenshot saved!");
-        },
+        }
         Err(e) => {
             eprintln!("{}", e);
             exit(1);
