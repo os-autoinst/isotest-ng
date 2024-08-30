@@ -1,11 +1,10 @@
-use isototest::connection::kill_client;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use vnc::client;
 use vnc::PixelFormat;
 use vnc::VncError;
 
-use isototest::connection::create_vnc_client;
+use isototest::connection::{create_vnc_client, kill_client};
 mod common;
 
 #[tokio::test]
