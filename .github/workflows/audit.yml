@@ -29,6 +29,13 @@ jobs:
             - name: Install libvnc as dependency
               run: sudo apt-get update && sudo apt-get install -y libvncserver-dev
 
+            - name: Install cargo audit command
+              uses: actions-rs/cargo@v1
+              with:
+                use-cross: true
+                command: install
+                args: cargo-audit --locked
+
             - name: Run cargo audit in ${{ matrix.subdir }}
               working-directory: ${{ matrix.subdir }}
               run: cargo audit --color always
